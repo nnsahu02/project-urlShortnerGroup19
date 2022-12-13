@@ -10,6 +10,7 @@
   "author": "Nrusinghanath sahu, Sachin patidar, Akash Gupta, Mansi Gupta",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.2.1",
     "base-url": "^1.0.0",
     "config": "^3.3.8",
     "express": "^4.18.2",
