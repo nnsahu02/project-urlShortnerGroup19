@@ -22,9 +22,9 @@ const sortUrl = async (req, res) => {
             return res.status(400).send({ status: false, message: "please enter valid Url." })
         }
 
-        if (!regexcheck(bodyData)) {
-            return res.status(400).send({ status: false, message: "url regex failed." })
-        }
+        // if (!regexcheck(bodyData)) {
+        //     return res.status(400).send({ status: false, message: "url regex failed." })
+        // }
 
         const uniqueCheck = await urlModel.findOne({ longUrl: bodyData })
 
@@ -32,17 +32,25 @@ const sortUrl = async (req, res) => {
             return res.status(400).send({ status: false, message: "The url is already exist." })
         }
 
-        let options = {
-            method: 'get',
-            url: bodyData
-        }
+        // let options = {
+        //     method: 'get',
+        //     url: bodyData
+        // }
 
-        let result = await axios(options)
-            .then(() => result.data)
-            .catch(err => err)
+        // let result = await axios(options)
+        //     .then(() => result.data)
+        //     .catch(err => err)
 
-        if (!result) {
-            return res.status(400).send({ status: false, message: "The url is not accessible" })
+        // if (!result) {
+        //     return res.status(400).send({ status: false, message: "The url is not accessible" })
+        // }
+
+        const checkingUrl = await axios.get(bodyData)
+        .then(()=>bodyData)
+        .catch(() => null)
+
+        if(!checkingUrl) {
+            return res.status(404).send({status : false , msg : "no such url found"})
         }
 
         let urlCode = shortid.generate()
