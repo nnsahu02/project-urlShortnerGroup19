@@ -1,12 +1,12 @@
 const shortid = require('shortid')
 const axios = require('axios')
-
 const urlModel = require('../model/urlModel')
 
 const { isvalidUrl, regexcheck } = require('../validation/validator')
 
+//---------------------------------------------- URL SHORTEN -------------------------------------------------//
 
-const sortUrl = async (req, res) => {
+const shortUrl = async (req, res) => {
     try {
         const bodyData = req.body.longUrl
 
@@ -23,7 +23,7 @@ const sortUrl = async (req, res) => {
         }
 
         // if (!regexcheck(bodyData)) {
-        //     return res.status(400).send({ status: false, message: "url regex failed." })
+        //     return res.status(400).send({ status: false, message: "url regex validation failed." })
         // }
 
         const uniqueCheck = await urlModel.findOne({ longUrl: bodyData })
@@ -32,25 +32,12 @@ const sortUrl = async (req, res) => {
             return res.status(400).send({ status: false, message: "The url is already exist." })
         }
 
-        // let options = {
-        //     method: 'get',
-        //     url: bodyData
-        // }
-
-        // let result = await axios(options)
-        //     .then(() => result.data)
-        //     .catch(err => err)
-
-        // if (!result) {
-        //     return res.status(400).send({ status: false, message: "The url is not accessible" })
-        // }
-
         const checkingUrl = await axios.get(bodyData)
-        .then(()=>bodyData)
-        .catch(() => null)
+            .then(() => bodyData)
+            .catch(() => null)
 
-        if(!checkingUrl) {
-            return res.status(404).send({status : false , msg : "no such url found"})
+        if (!checkingUrl) {
+            return res.status(404).send({ status: false, message: "no such url found" })
         }
 
         let urlCode = shortid.generate()
@@ -73,18 +60,33 @@ const sortUrl = async (req, res) => {
     }
 }
 
-const getSortUrl = async (req, res) => {
+//----------------------------------------------------------------------------------------------------------------//
+
+
+//------------------------------------------- REDIRECTING URL ---------------------------------------------------//
+
+const getShortUrl = async (req, res) => {
     try {
         urlCode = req.params.urlCode
 
+        if (!urlCode) {
+            return res.status(400).send({ status: false, message: "please provide uriCode in params" })
+        }
+
         const urlData = await urlModel.findOne({ urlCode })
+
+        if (!urlData) {
+            return res.status(404).send({ status: false, message: "no url found with this urlCode." })
+        }
 
         const longUrl = urlData.longUrl
 
-        return res.redirect(longUrl)
+        return res.status(302).redirect(longUrl)
     } catch (error) {
         return res.status(500).send({ status: false, message: error.message })
     }
 }
 
-module.exports = { sortUrl, getSortUrl }
+//------------------------------------------------------------------------------------------------------------------//
+
+module.exports = { shortUrl, getShortUrl }
