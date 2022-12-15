@@ -29,6 +29,8 @@ redisClient.on("connect", async function () {
 const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
 const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
 
+//const SETEX_ASYNC = promisify(redisClient.SETEX).bind(redisClient);
+
 //----------------------------------------------------------------------------------------------------------------//
 
 
@@ -51,12 +53,15 @@ const shortUrl = async (req, res) => {
         }
 
         const checkCacheUnique = await GET_ASYNC(`${bodyData}`)
-        if (checkCacheUnique) return res.status(400).send({ status: false, message: "The url is already exist(from cache)." })
 
-        const uniqueCheck = await urlModel.findOne({ longUrl: bodyData })
+        if (checkCacheUnique)
+            return res.status(200).send({ status: true, message: "The url is already shortened(from cache).", data: JSON.parse(checkCacheUnique) })
+
+        const uniqueCheck = await urlModel.findOne({ longUrl: bodyData }).select({ _id: 0, createdAt: 0, updatedAt: 0, __v: 0 })
 
         if (uniqueCheck) {
-            return res.status(400).send({ status: false, message: "The url is already exist." })
+            await SET_ASYNC(`${bodyData}`, JSON.stringify(uniqueCheck), "EX", 120) // http://jkhhgj : {longiurl : ghdjhg, }
+            return res.status(200).send({ status: true, message: "The url is already shortened.", data: uniqueCheck })
         }
 
         const checkingUrl = await axios.get(bodyData)
@@ -64,7 +69,7 @@ const shortUrl = async (req, res) => {
             .catch(() => null)
 
         if (!checkingUrl) {
-            return res.status(404).send({ status: false, message: "no such url found" })
+            return res.status(400).send({ status: false, message: "Please provide valid longUrl." })
         }
 
         let urlCode = shortid.generate()
@@ -80,9 +85,9 @@ const shortUrl = async (req, res) => {
         const urlData = await urlModel.create(url)
 
         //SET CACHE
-        await SET_ASYNC(`${bodyData}`, JSON.stringify(url), "EX" , 10)
+        await SET_ASYNC(`${bodyData}`, JSON.stringify(url), "EX", 120)
 
-        return res.status(200).send({ status: true, data: url })
+        return res.status(201).send({ status: true, data: url })
 
     }
     catch (error) {
@@ -104,7 +109,7 @@ const getShortUrl = async (req, res) => {
         }
 
         let cahcedUrlData = await GET_ASYNC(`${urlCode}`)
-        console.log("redirecting to", cahcedUrlData)
+        //console.log("redirecting to", cahcedUrlData)
 
         if (cahcedUrlData) {
             return res.status(302).redirect(cahcedUrlData)
@@ -118,7 +123,7 @@ const getShortUrl = async (req, res) => {
 
             const longUrl = urlData.longUrl
 
-            await SET_ASYNC(`${urlCode}`, (longUrl), "EX" , 10)
+            await SET_ASYNC(`${urlCode}`, (longUrl), "EX", 120)
 
             return res.status(302).redirect(longUrl)
         }
