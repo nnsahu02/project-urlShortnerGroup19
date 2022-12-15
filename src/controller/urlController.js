@@ -4,7 +4,7 @@ const redis = require("redis");
 const { promisify } = require("util");
 const urlModel = require('../model/urlModel')
 
-const { isvalidUrl, regexcheck } = require('../validation/validator')
+const { isvalidUrl } = require('../validation/validator')
 
 
 //---------------------------------------------- REDIS CONNECT -------------------------------------------------//
@@ -28,8 +28,6 @@ redisClient.on("connect", async function () {
 
 const SET_ASYNC = promisify(redisClient.SET).bind(redisClient);
 const GET_ASYNC = promisify(redisClient.GET).bind(redisClient);
-
-//const SETEX_ASYNC = promisify(redisClient.SETEX).bind(redisClient);
 
 //----------------------------------------------------------------------------------------------------------------//
 
@@ -55,12 +53,14 @@ const shortUrl = async (req, res) => {
         const checkCacheUnique = await GET_ASYNC(`${bodyData}`)
 
         if (checkCacheUnique)
-            return res.status(200).send({ status: true, message: "The url is already shortened(from cache).", data: JSON.parse(checkCacheUnique) })
+            return res.status(200).send({
+                status: true, message: "The url is already shortened(from cache).", data: JSON.parse(checkCacheUnique)
+            })
 
         const uniqueCheck = await urlModel.findOne({ longUrl: bodyData }).select({ _id: 0, createdAt: 0, updatedAt: 0, __v: 0 })
 
         if (uniqueCheck) {
-            await SET_ASYNC(`${bodyData}`, JSON.stringify(uniqueCheck), "EX", 120) // http://jkhhgj : {longiurl : ghdjhg, }
+            await SET_ASYNC(`${bodyData}`, JSON.stringify(uniqueCheck), "EX", 120)
             return res.status(200).send({ status: true, message: "The url is already shortened.", data: uniqueCheck })
         }
 
@@ -109,7 +109,6 @@ const getShortUrl = async (req, res) => {
         }
 
         let cahcedUrlData = await GET_ASYNC(`${urlCode}`)
-        //console.log("redirecting to", cahcedUrlData)
 
         if (cahcedUrlData) {
             return res.status(302).redirect(cahcedUrlData)
